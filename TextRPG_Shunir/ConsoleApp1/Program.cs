@@ -7,6 +7,7 @@ using System.Text.Json.Serialization.Metadata;
 using TextRPG;
 using TextRPG.Items;
 
+
 namespace TextRPG
 {
     public static class Story //스토리 작성 가능
@@ -42,10 +43,9 @@ namespace TextRPG
             Console.WriteLine("\n이세계 여행을 도와줄 라피야!");
             Console.Write("\n이름을 입력해주세요: ");
             string name = Console.ReadLine();
-            if (string.IsNullOrWhiteSpace(name))
-                name = "플레이어";
+            if (string.IsNullOrWhiteSpace(name))  name = "플레이어";
 
-            Player player = new(name, "시민");
+            var player = new Player(name, "시민");
             Stage.GetSelect(player);
         }
     }
@@ -66,8 +66,6 @@ namespace TextRPG
         public int MaxExp { get; set; } = 100;
         public int Gold { get; set; } = 1500;
         public List<Item> Inventory { get; set; } = new();
-
-
 
         public Player() { }
         public Player(string name, string job)
@@ -124,18 +122,14 @@ namespace TextRPG
                 if (selected.Equipped)
                 {
                     selected.Equipped = false;
-                    if (selected is Weapon weapon)
-                        Attack -= weapon.Attack;
-                    else if (selected is Armor armor)
-                        Defense -= armor.Defense;
+                    if (selected is Weapon weapon)  Attack -= weapon.Attack;
+                    else if (selected is Armor armor)  Defense -= armor.Defense;
                 }
                 else
                 {
                     selected.Equipped = true;
-                    if (selected is Weapon weapon)
-                        Attack += weapon.Attack;
-                    else if (selected is Armor armor)
-                        Defense += armor.Defense;
+                    if (selected is Weapon weapon)  Attack += weapon.Attack;
+                    else if (selected is Armor armor)  Defense += armor.Defense;
                 }
                 Console.WriteLine($"{selected.Name} {(selected.Equipped ? "장착" : "해제")} 완료");
             }
@@ -175,7 +169,7 @@ namespace TextRPG
             var options = new JsonSerializerOptions
             {
                 WriteIndented = true,
-                TypeInfoResolver = JsonTypeInfoResolver.Combine(ItemContext.Default, JsonTypeInfoResolver.Default)
+                TypeInfoResolver = ItemContext.Default
             };
             string json = JsonSerializer.Serialize(player, options);
             File.WriteAllText("save.json", json);
@@ -186,7 +180,7 @@ namespace TextRPG
         {
             var options = new JsonSerializerOptions
             {
-                TypeInfoResolver = JsonTypeInfoResolver.Combine(ItemContext.Default, JsonTypeInfoResolver.Default)
+                TypeInfoResolver = ItemContext.Default
             };
             try
             {
@@ -245,78 +239,83 @@ namespace TextRPG
 
 }
 
-using System.Text.Json.Serialization;
+
+public static class Dungeon
+{
+    public static void Enter(Player p)
+    {
+        Console.WriteLine("던전 기능은 아직 구현되지 않았습니다.");
+    }
+}
+
+
+
+
 
 namespace TextRPG.Items
 {
-    [JsonSourceGenerationOptions(
-        WriteIndented = true,
-        GenerationMode = JsonSourceGenerationMode.Metadata,
-        PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase
-    )]
-    [JsonSerializable(typeof(TextRPG.Player))]
-    [JsonSerializable(typeof(Item))]
-    [JsonDerivedType(typeof(Weapon)]
-    [JsonDerivedType(typeof(Armor)]
-    internal partial class ItemContext : JsonSerializerContext
-    { }
-
-
-}
-
-public abstract Item Clone();
-
-public abstract class Item
-{
-    public string Name { get; set; }
-    public string Description { get; set; }
-    public int Price { get; set; }
-    public bool Equipped { get; set; }
-    public abstract void Use(TextRPG.Player p);
-}
-
-public class Weapon : Item
-{
-    public int Attack { get; set; }
-    public Weapon() { }
-    public Weapon(string name, int price, string desc, int attack)
-    {
-        Name = name;
-        Price = price;
-        Description = desc;
-        Attack = attack;
-    }
-
-    public override void Use(Player p)
-    {
-        p.Attack += Attack;
-        Equipped = true;
-    }
-
-    public override Item Clone() => new Weapon(Name, Price, Description, Attack);
-}
-
-public class Armor : Item
-{
-    public int Defense { get; set; }
-    public Armor() { }
-    public Armor(string name, int price, string desc, int def)
-    {
-        Name = name; Price = price; Description = desc; Defense = def;
-    }
-
-    public override void Use(TextRPG.Player p)
-    {
-        p.Defense += Defense;
-        Equipped = true;
-    }
-
-    public override Item Clone() => new Armor(Name, Price, Description, Defense);
-}
-
+[JsonPolymorphic(TypeDiscriminatorPropertyName = "$type")]
+[JsonDerivedType(typeof(TextRPG.Items.Weapon), "weapon")]
+[JsonDerivedType(typeof(TextRPG.Items.Armor), "armor")]
 [JsonSourceGenerationOptions(WriteIndented = true, GenerationMode = JsonSourceGenerationMode.Metadata)]
-[JsonSerializable(typeof(Item))]
-[JsonSerializable(typeof(Weapon))]
-[JsonSerializable(typeof(Armor))]
-  
+[JsonSerializable(typeof(TextRPG.Player))]
+[JsonSerializable(typeof(TextRPG.Items.Item))]
+[JsonSerializable(typeof(TextRPG.Items.Weapon))]
+[JsonSerializable(typeof(TextRPG.Items.Armor))]
+    public partial class ItemContext : JsonSerializerContext { }
+
+    public abstract class Item
+    {
+        public string Name { get; set; }
+        public string Description { get; set; }
+        public int Price { get; set; }
+        public bool Equipped { get; set; }
+        public abstract void Use(TextRPG.Player p);
+        public abstract Item Clone();
+    }
+
+    public class Weapon : Item
+    {
+        public int Attack { get; set; }
+        public Weapon() { }
+        public Weapon(string name, int price, string desc, int atk)
+        {
+            Name = name;
+            Price = price;
+            Description = desc;
+            Attack = atk;
+        }
+
+        public override void Use(Player p)
+        {
+            p.Attack += Attack;
+            Equipped = true;
+        }
+
+        public override Item Clone() => new Weapon(Name, Price, Description, Attack);
+    }
+
+    public class Armor : Item
+    {
+        public int Defense { get; set; }
+        public Armor() { }
+        public Armor(string name, int price, string desc, int def)
+        {
+            Name = name;
+            Price = price;
+            Description = desc;
+            Defense = def;
+        }
+
+        public override void Use(Player p)
+        {
+            p.Defense += Defense;
+            Equipped = true;
+        }
+
+        public override Item Clone() => new Armor(Name, Price, Description, Defense);
+
+    }
 }
+
+
