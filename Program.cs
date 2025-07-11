@@ -51,6 +51,9 @@ namespace TextRPG
         }
     }
 
+
+
+
     public class Player
     {
         public string Name { get; set; }
@@ -186,6 +189,10 @@ namespace TextRPG
             {
                 WriteIndented = true,
                 Converters = { new JsonStringEnumConverter() }
+                 TypeInfoResolver = JsonTypeInfoResolver.Combine(
+                   TextRPG.Items.ItemContext.Default,
+                   JsonTypeInfoResolver.Default
+                 )
             };
             string json = File.ReadAllText("save.json");
             try
@@ -214,11 +221,15 @@ namespace TextRPG
 
         public static void Enter(Player p)
         {
+            Console.Clear();
             Console.WriteLine("[상점]");
             for (int i = 0; i < items.Count; i++)
                 Console.WriteLine($"{i + 1}. {items[i].Name} - {items[i].Description} ({items[i].Price} G)");
 
             Console.Write("\n구매할 아이템 번호 입력 \n(0: 나가기): ");
+            Console.ReadKey();
+            Console.ReadLine();
+
             if (int.TryParse(Console.ReadLine(), out int choice) && choice > 0 && choice <= items.Count)
             {
                 var item = items[choice - 1];
@@ -300,6 +311,8 @@ namespace TextRPG.Items
     [JsonPolymorphic(TypeDiscriminatorPropertyName = "$type")]
     [JsonDerivedType(typeof(Weapon), typeDiscriminator: "weapon")]
     [JsonDerivedType(typeof(Armor), typeDiscriminator: "armor")]
+    public abstract class Item { ... }
+
     public abstract class Item
     {
         public string Name { get; set; }
