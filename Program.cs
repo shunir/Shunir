@@ -1,5 +1,4 @@
-﻿// Program.cs
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Http.Json;
@@ -10,7 +9,7 @@ using TextRPG.Items;
 
 namespace TextRPG
 {
-    public static class Story
+    public static class Story //스토리 작성 가능
     {
         public static void Intro()
         {
@@ -32,7 +31,6 @@ namespace TextRPG
 
     class Program
     {
-  
 
         static void Main()
         {
