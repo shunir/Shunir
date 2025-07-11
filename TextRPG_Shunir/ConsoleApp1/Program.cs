@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
+using TextRPG;
 using TextRPG.Items;
 
 namespace TextRPG
@@ -15,7 +15,6 @@ namespace TextRPG
         {
             Console.Clear();
             Console.WriteLine("====================================");
-            Console.WriteLine("\n당신은 평범한 삶을 살던 중...");
             Console.WriteLine("\n갑자기 눈부신 빛에 휩싸이며 이세계에 떨어졌습니다.");
             Console.WriteLine("\n눈에 갑자기 문제가 생겼는지 시야는 온통 검은색입니다.");
             Console.WriteLine("\n앞이 보이지 않는 상태에서 누군가의 목소리가 들립니다...");
@@ -25,8 +24,8 @@ namespace TextRPG
             Console.ReadKey();
         }
 
-    
-   
+
+
     }
 
     class Program
@@ -68,16 +67,21 @@ namespace TextRPG
         public int Gold { get; set; } = 1500;
         public List<Item> Inventory { get; set; } = new();
 
+
+
+        public Player() { }
         public Player(string name, string job)
         {
             Name = name;
             Job = job;
         }
 
+
+
         public void Rest()
         {
             Hp = MaxHp;
-            Console.WriteLine("\n휴식을 통해 체력을 회복했습니다.");
+            Console.WriteLine("\n[휴식을 통해 체력을 회복했습니다.]");
         }
 
         public void ShowStatus()
@@ -162,7 +166,7 @@ namespace TextRPG
                     case "종료": return;
                     default: Console.WriteLine("잘못된 명령어입니다."); break;
                 }
-                Console.ReadKey();
+                Console.ReadLine();
             }
         }
 
@@ -171,40 +175,30 @@ namespace TextRPG
             var options = new JsonSerializerOptions
             {
                 WriteIndented = true,
-                Converters = { new JsonStringEnumConverter() }
-            };  
+                TypeInfoResolver = JsonTypeInfoResolver.Combine(ItemContext.Default, JsonTypeInfoResolver.Default)
+            };
             string json = JsonSerializer.Serialize(player, options);
             File.WriteAllText("save.json", json);
-            Console.WriteLine("\n게임이 저장되었습니다.");
+            Console.WriteLine("\n[게임이 저장되었습니다.]");
         }
 
         static Player Load()
         {
-            if (!File.Exists("save.json"))
-            {
-                Console.WriteLine("\n저장 파일이 없습니다.");
-                return new Player("\n불러오기 실패", "시민");
-            }
             var options = new JsonSerializerOptions
             {
-                WriteIndented = true,
-                Converters = { new JsonStringEnumConverter() }
-                 TypeInfoResolver = JsonTypeInfoResolver.Combine(
-                   TextRPG.Items.ItemContext.Default,
-                   JsonTypeInfoResolver.Default
-                 )
+                TypeInfoResolver = JsonTypeInfoResolver.Combine(ItemContext.Default, JsonTypeInfoResolver.Default)
             };
-            string json = File.ReadAllText("save.json");
             try
             {
-                var player = JsonSerializer.Deserialize<Player>(json, options);
-                Console.WriteLine("\n게임을 불러왔습니다.");
-                return player ?? new Player("\n불러오기 실패", "시민");
+                string json = File.ReadAllText("save.json");
+                var loaded = JsonSerializer.Deserialize<Player>(json, options);
+                Console.WriteLine("불러오기 완료!");
+                return loaded ?? new Player("불러오기 실패", "시민");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"\n불러오기 중 오류 발생: {ex.Message}");
-                return new Player("\n불러오기 실패", "시민");
+                Console.WriteLine($"불러오기 중 오류: {ex.Message}");
+                return new Player("불러오기 실패", "시민");
             }
         }
     }
@@ -227,7 +221,6 @@ namespace TextRPG
                 Console.WriteLine($"{i + 1}. {items[i].Name} - {items[i].Description} ({items[i].Price} G)");
 
             Console.Write("\n구매할 아이템 번호 입력 \n(0: 나가기): ");
-            Console.ReadKey();
             Console.ReadLine();
 
             if (int.TryParse(Console.ReadLine(), out int choice) && choice > 0 && choice <= items.Count)
@@ -250,119 +243,80 @@ namespace TextRPG
         }
     }
 
-    public static class Dungeon
-    {
-        // 상점 아이템 목록을 Dungeon 클래스에 추가하여 오류 해결
-        static List<Item> items = new()
-        {
-            new Weapon("나무 몽둥이", 50, "던전에서 발견된 나무 몽둥이", 3),
-            new Weapon("돌도끼", 200, "던전에서 발견된 돌로 만든 도끼", 8),
-            new Armor("낡은 갑옷", 120, "오래된 갑옷", 4),
-            new Armor("미스릴 갑옷", 800, "희귀한 미스릴로 만든 갑옷", 15)
-        };
-
-        public static void Enter(Player p)
-        {
-            Console.WriteLine("\n[던전 상점]");
-            for (int i = 0; i < items.Count; i++)
-                Console.WriteLine($"{i + 1}. {items[i].Name} - {items[i].Description} ({items[i].Price} G)");
-
-            Console.Write("\n구매할 아이템 번호 입력 \n(0: 나가기): ");
-            if (int.TryParse(Console.ReadLine(), out int choice) && choice > 0 && choice <= items.Count)
-            {
-                var item = items[choice - 1];
-                if (p.Gold >= item.Price)
-                {
-                    p.Gold -= item.Price;
-                    // 아이템 복제하여 인벤토리에 추가 (참조 공유 방지)
-                    if (item is Weapon w)
-                        p.Inventory.Add(new Weapon(w.Name, w.Price, w.Description, w.Attack));
-                    else if (item is Armor a)
-                        p.Inventory.Add(new Armor(a.Name, a.Price, a.Description, a.Defense));
-                    else
-                        p.Inventory.Add(item);
-                    Console.WriteLine($"\n{item.Name} 구매 완료!");
-                }
-                else Console.WriteLine("\n골드가 부족합니다.");
-            }
-        }
-    }
 }
 
-namespace TextRPG.Entities
-{
-    public class Monster
-    {
-        public string Name { get; }
-        public int Hp { get; set; }
-        public int Attack { get; }
-
-        public Monster(string name, int hp, int attack)
-        {
-            Name = name;
-            Hp = hp;
-            Attack = attack;
-        }
-    }
-}
+using System.Text.Json.Serialization;
 
 namespace TextRPG.Items
 {
-    [JsonPolymorphic(TypeDiscriminatorPropertyName = "$type")]
-    [JsonDerivedType(typeof(Weapon), typeDiscriminator: "weapon")]
-    [JsonDerivedType(typeof(Armor), typeDiscriminator: "armor")]
-    public abstract class Item { ... }
+    [JsonSourceGenerationOptions(
+        WriteIndented = true,
+        GenerationMode = JsonSourceGenerationMode.Metadata,
+        PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase
+    )]
+    [JsonSerializable(typeof(TextRPG.Player))]
+    [JsonSerializable(typeof(Item))]
+    [JsonDerivedType(typeof(Weapon)]
+    [JsonDerivedType(typeof(Armor)]
+    internal partial class ItemContext : JsonSerializerContext
+    { }
 
-    public abstract class Item
+
+}
+
+public abstract Item Clone();
+
+public abstract class Item
+{
+    public string Name { get; set; }
+    public string Description { get; set; }
+    public int Price { get; set; }
+    public bool Equipped { get; set; }
+    public abstract void Use(TextRPG.Player p);
+}
+
+public class Weapon : Item
+{
+    public int Attack { get; set; }
+    public Weapon() { }
+    public Weapon(string name, int price, string desc, int attack)
     {
-        public string Name { get; set; }
-        public string Description { get; set; }
-        public int Price { get; set; }
-        public bool Equipped { get; set; }
-        public abstract void Use(TextRPG.Player p);
+        Name = name;
+        Price = price;
+        Description = desc;
+        Attack = attack;
     }
 
-    public class Weapon : Item
+    public override void Use(Player p)
     {
-        public int Attack { get; set; }
-        public Weapon(string name, int price, string desc, int attack)
-        {
-            Name = name;
-            Price = price;
-            Description = desc;
-            Attack = attack;
-        }
-        public override void Use(TextRPG.Player p)
-        {
-            p.Attack += Attack;
-            Equipped = true;
-            Console.WriteLine($"\n{Name}을 장착했습니다.");
-        }
+        p.Attack += Attack;
+        Equipped = true;
     }
 
-    public class Armor : Item
+    public override Item Clone() => new Weapon(Name, Price, Description, Attack);
+}
+
+public class Armor : Item
+{
+    public int Defense { get; set; }
+    public Armor() { }
+    public Armor(string name, int price, string desc, int def)
     {
-        public int Defense { get; set; }
-        public Armor(string name, int price, string desc, int defense)
-        {
-            Name = name;
-            Price = price;
-            Description = desc;
-            Defense = defense;
-        }
-        public override void Use(TextRPG.Player p)
-        {
-            p.Defense += Defense;
-            Equipped = true;
-            Console.WriteLine($"\n{Name}을 장착했습니다.");
-        }
+        Name = name; Price = price; Description = desc; Defense = def;
     }
 
-    public enum ItemType
+    public override void Use(TextRPG.Player p)
     {
-        Weapon,
-        Armor,
-        Consumable,
-        Quest
+        p.Defense += Defense;
+        Equipped = true;
     }
+
+    public override Item Clone() => new Armor(Name, Price, Description, Defense);
+}
+
+[JsonSourceGenerationOptions(WriteIndented = true, GenerationMode = JsonSourceGenerationMode.Metadata)]
+[JsonSerializable(typeof(Item))]
+[JsonSerializable(typeof(Weapon))]
+[JsonSerializable(typeof(Armor))]
+  
 }
