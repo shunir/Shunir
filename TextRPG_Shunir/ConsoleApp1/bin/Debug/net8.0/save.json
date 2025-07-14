@@ -1,0 +1,13 @@
+{
+  "Name": "shunir",
+  "Job": "\uC2DC\uBBFC",
+  "Level": 1,
+  "Attack": 10,
+  "Defense": 5,
+  "Hp": 100,
+  "MaxHp": 100,
+  "Exp": 0,
+  "MaxExp": 100,
+  "Gold": 1500,
+  "Inventory": []
+}
